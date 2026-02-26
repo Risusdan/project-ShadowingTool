@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { YouTubePlayer } from 'react-youtube';
-import type { Video } from './types';
+import type { Video, LoopRange } from './types';
 import { fetchVideo } from './api/client';
+import { usePlayerSync } from './hooks/usePlayerSync';
+import { usePlaybackControls } from './hooks/usePlaybackControls';
 import VideoPlayer from './components/VideoPlayer';
+import PlaybackControls from './components/PlaybackControls';
 import TranscriptPanel from './components/TranscriptPanel';
 
-/** Root application component for the 100LS Shadowing Tool. */
 function App() {
   const [url, setUrl] = useState('');
   const [video, setVideo] = useState<Video | null>(null);
@@ -13,7 +15,23 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  /** Submit the YouTube URL to the backend and display the result. */
+  // Playback control state
+  const [loopRange, setLoopRange] = useState<LoopRange | null>(null);
+  const [loopEnabled, setLoopEnabled] = useState(false);
+  const [pauseAfterSegment, setPauseAfterSegment] = useState(false);
+  const [pausedBanner, setPausedBanner] = useState(false);
+
+  const transcript = video?.transcript ?? [];
+  const { activeSegmentIndex, isPlaying } = usePlayerSync(player, transcript);
+  const { playbackRate, setSpeed, seekTo, play, pause } = usePlaybackControls(player);
+
+  // Track previous segment for pause-after-segment detection
+  const prevSegmentRef = useRef(activeSegmentIndex);
+
+  // Shift+click state for loop range selection
+  const shiftClickCountRef = useRef(0);
+  const loopStartRef = useRef(0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -22,6 +40,11 @@ function App() {
     try {
       const data = await fetchVideo(url);
       setVideo(data);
+      // Reset playback state for new video
+      setLoopRange(null);
+      setLoopEnabled(false);
+      setPauseAfterSegment(false);
+      setPausedBanner(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -29,13 +52,85 @@ function App() {
     }
   };
 
-  /** Seek the embedded player to the given timestamp and start playing. */
   const handleSegmentClick = (startTime: number) => {
-    if (player) {
-      player.seekTo(startTime, true);
-      player.playVideo();
-    }
+    seekTo(startTime);
+    play();
+    setPausedBanner(false);
   };
+
+  const handleSegmentShiftClick = useCallback(
+    (index: number) => {
+      const clickNum = shiftClickCountRef.current;
+      if (clickNum === 0) {
+        // First shift+click: set start
+        loopStartRef.current = index;
+        shiftClickCountRef.current = 1;
+        setLoopRange({ startIndex: index, endIndex: index });
+      } else if (clickNum === 1) {
+        // Second shift+click: set end (ensure start <= end)
+        const start = Math.min(loopStartRef.current, index);
+        const end = Math.max(loopStartRef.current, index);
+        setLoopRange({ startIndex: start, endIndex: end });
+        setLoopEnabled(true);
+        shiftClickCountRef.current = 2;
+      } else {
+        // Third shift+click: reset
+        setLoopRange(null);
+        setLoopEnabled(false);
+        shiftClickCountRef.current = 0;
+      }
+    },
+    [],
+  );
+
+  // Loop: when active segment exceeds loop end, seek back to start
+  useEffect(() => {
+    if (!loopEnabled || !loopRange || activeSegmentIndex < 0) return;
+    if (activeSegmentIndex > loopRange.endIndex) {
+      const startTime = transcript[loopRange.startIndex]?.start;
+      if (startTime !== undefined) {
+        seekTo(startTime);
+      }
+    }
+  }, [activeSegmentIndex, loopEnabled, loopRange, transcript, seekTo]);
+
+  // Pause-after-segment: when segment advances naturally by 1, pause
+  // Loop takes priority — don't pause if loop is enabled
+  useEffect(() => {
+    const prev = prevSegmentRef.current;
+    prevSegmentRef.current = activeSegmentIndex;
+
+    if (!pauseAfterSegment || loopEnabled || !isPlaying) return;
+    if (activeSegmentIndex >= 0 && activeSegmentIndex === prev + 1) {
+      pause();
+      setPausedBanner(true);
+    }
+  }, [activeSegmentIndex, pauseAfterSegment, loopEnabled, isPlaying, pause]);
+
+  // Clear paused banner when playback resumes
+  useEffect(() => {
+    if (isPlaying) {
+      setPausedBanner(false);
+    }
+  }, [isPlaying]);
+
+  // Keyboard shortcut: Space to play/pause (when no input focused)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+      e.preventDefault();
+      if (isPlaying) {
+        pause();
+      } else {
+        play();
+        setPausedBanner(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, play, pause]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -44,7 +139,6 @@ function App() {
           100LS Shadowing Tool
         </h1>
 
-        {/* URL Input */}
         <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
           <input
             type="text"
@@ -75,9 +169,27 @@ function App() {
               onReady={setPlayer}
             />
 
+            <PlaybackControls
+              playbackRate={playbackRate}
+              onSpeedChange={setSpeed}
+              loopEnabled={loopEnabled}
+              onLoopToggle={() => setLoopEnabled((prev) => !prev)}
+              pauseAfterSegment={pauseAfterSegment}
+              onPauseAfterSegmentToggle={() => setPauseAfterSegment((prev) => !prev)}
+            />
+
+            {pausedBanner && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-2 rounded-lg">
+                Paused — press Space to continue
+              </div>
+            )}
+
             <TranscriptPanel
-              transcript={video.transcript}
+              transcript={transcript}
               onSegmentClick={handleSegmentClick}
+              activeSegmentIndex={activeSegmentIndex}
+              loopRange={loopRange}
+              onSegmentShiftClick={handleSegmentShiftClick}
             />
           </div>
         )}

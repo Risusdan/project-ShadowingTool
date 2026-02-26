@@ -1,16 +1,13 @@
 import YouTube from 'react-youtube';
 import type { YouTubeEvent, YouTubePlayer } from 'react-youtube';
 
-/** Props for the {@link VideoPlayer} component. */
 interface VideoPlayerProps {
-  /** The 11-character YouTube video ID to embed. */
   videoId: string;
-  /** Called once the iframe player is ready, providing the player instance. */
   onReady: (player: YouTubePlayer) => void;
+  onStateChange?: (event: YouTubeEvent) => void;
 }
 
-/** Embeds a YouTube video via the react-youtube iframe wrapper. */
-export default function VideoPlayer({ videoId, onReady }: VideoPlayerProps) {
+export default function VideoPlayer({ videoId, onReady, onStateChange }: VideoPlayerProps) {
   const handleReady = (event: YouTubeEvent) => {
     onReady(event.target);
   };
@@ -29,6 +26,7 @@ export default function VideoPlayer({ videoId, onReady }: VideoPlayerProps) {
           },
         }}
         onReady={handleReady}
+        onStateChange={onStateChange}
         className="w-full h-full"
         iframeClassName="w-full h-full rounded-lg"
       />

@@ -8,6 +8,18 @@ export interface TranscriptSegment {
   text: string;
 }
 
+/** A loop range defined by transcript segment indices (inclusive). */
+export interface LoopRange {
+  startIndex: number;
+  endIndex: number;
+}
+
+/** Available playback speed multipliers. */
+export const PLAYBACK_SPEEDS = [0.5, 0.75, 1.0, 1.25, 1.5] as const;
+
+/** One of the supported playback speed values. */
+export type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
+
 /** Video metadata and full transcript returned by the backend API. */
 export interface Video {
   /** The 11-character YouTube video ID. */
