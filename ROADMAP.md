@@ -13,31 +13,31 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 **Goal:** Paste a YouTube URL → see the video and transcript side by side.
 
 ### Backend Setup
-- [ ] Initialize Flask project with virtual environment and `requirements.txt`
-- [ ] Create project directory structure (`app.py`, `routes/`, `services/`, `models.py`)
-- [ ] Install core dependencies: `flask`, `youtube-transcript-api`, `yt-dlp`, `flask-sqlalchemy`, `flask-cors`
-- [ ] Create `app.py` entry point with CORS enabled
+- [x] Initialize Flask project with virtual environment and `requirements.txt`
+- [x] Create project directory structure (`app.py`, `routes/`, `services/`, `models.py`)
+- [x] Install core dependencies: `flask`, `youtube-transcript-api`, `yt-dlp`, `flask-sqlalchemy`, `flask-cors`
+- [x] Create `app.py` entry point with CORS enabled
 
 ### Backend — Video & Transcript API
-- [ ] Create `services/youtube_service.py` — extract video metadata (title, duration, thumbnail) via `yt-dlp`
-- [ ] Create `services/youtube_service.py` — fetch transcript via `youtube-transcript-api` with auto-caption fallback
-- [ ] Implement `POST /api/video` endpoint: accept YouTube URL, validate, return metadata + transcript JSON
-- [ ] Implement `GET /api/video/<video_id>/transcript` endpoint: return cached transcript
-- [ ] Add URL validation (reject non-YouTube URLs, handle short URLs like youtu.be)
+- [x] Create `services/youtube_service.py` — extract video metadata (title, duration, thumbnail) via `yt-dlp`
+- [x] Create `services/youtube_service.py` — fetch transcript via `youtube-transcript-api` with auto-caption fallback
+- [x] Implement `POST /api/video` endpoint: accept YouTube URL, validate, return metadata + transcript JSON
+- [x] Implement `GET /api/video/<video_id>/transcript` endpoint: return cached transcript
+- [x] Add URL validation (reject non-YouTube URLs, handle short URLs like youtu.be)
 
 ### Frontend Setup
-- [ ] Initialize React + TypeScript project with Vite
-- [ ] Install dependencies: `react-youtube` (or YouTube IFrame API), `tailwindcss`
-- [ ] Configure Tailwind CSS
-- [ ] Configure Vite dev server proxy to Flask backend
-- [ ] Define TypeScript types (`types/index.ts`): `Video`, `TranscriptSegment`, etc.
-- [ ] Create `api/client.ts` with helper to call `POST /api/video`
+- [x] Initialize React + TypeScript project with Vite
+- [x] Install dependencies: `react-youtube` (or YouTube IFrame API), `tailwindcss`
+- [x] Configure Tailwind CSS
+- [x] Configure Vite dev server proxy to Flask backend
+- [x] Define TypeScript types (`types/index.ts`): `Video`, `TranscriptSegment`, etc.
+- [x] Create `api/client.ts` with helper to call `POST /api/video`
 
 ### Frontend — Video Player & Transcript
-- [ ] Build `VideoPlayer.tsx` — embed YouTube player via IFrame API / `react-youtube`
-- [ ] Build `TranscriptPanel.tsx` — render transcript as a scrollable list of timestamped segments
-- [ ] Wire up URL input form → call backend → display video + transcript
-- [ ] Implement click-to-jump: clicking a transcript segment seeks the video to that timestamp
+- [x] Build `VideoPlayer.tsx` — embed YouTube player via IFrame API / `react-youtube`
+- [x] Build `TranscriptPanel.tsx` — render transcript as a scrollable list of timestamped segments
+- [x] Wire up URL input form → call backend → display video + transcript
+- [x] Implement click-to-jump: clicking a transcript segment seeks the video to that timestamp
 
 ### Checkpoint
 > **Done when:** You can paste a YouTube URL into the app, see the embedded video and its transcript listed below, and click any line to jump the video to that timestamp.
@@ -49,27 +49,27 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 **Goal:** Fully interactive playback with synchronized transcript highlighting, speed controls, and looping.
 
 ### Playback Speed
-- [ ] Build `PlaybackControls.tsx` component
-- [ ] Implement speed adjustment buttons: 0.5x, 0.75x, 1.0x, 1.25x, 1.5x
-- [ ] Apply speed changes to the YouTube player in real time
+- [x] Build `PlaybackControls.tsx` component
+- [x] Implement speed adjustment buttons: 0.5x, 0.75x, 1.0x, 1.25x, 1.5x
+- [x] Apply speed changes to the YouTube player in real time
 
 ### Transcript Synchronization
-- [ ] Poll or listen to YouTube player time updates (e.g., every 100–250 ms)
-- [ ] Highlight the current transcript segment based on playback position
-- [ ] Auto-scroll the transcript panel to keep the active segment visible
-- [ ] Create `hooks/useYouTubePlayer.ts` to encapsulate player state and time tracking
+- [x] Poll or listen to YouTube player time updates (e.g., every 100–250 ms)
+- [x] Highlight the current transcript segment based on playback position
+- [x] Auto-scroll the transcript panel to keep the active segment visible
+- [x] Create `hooks/usePlayerSync.ts` and `hooks/usePlaybackControls.ts` to encapsulate player state and time tracking
 
 ### Segment Looping
-- [ ] Allow the user to select a start segment and end segment for looping
-- [ ] Implement loop logic: when playback reaches the end segment, seek back to the start segment
-- [ ] Add visual indicator for the selected loop range in the transcript
-- [ ] Provide a button/toggle to enable/disable loop mode
+- [x] Allow the user to select a start segment and end segment for looping
+- [x] Implement loop logic: when playback reaches the end segment, seek back to the start segment
+- [x] Add visual indicator for the selected loop range in the transcript
+- [x] Provide a button/toggle to enable/disable loop mode
 
 ### Pause-After-Segment Mode
-- [ ] Add a toggle for "pause after each segment" mode
-- [ ] Detect when a segment ends and auto-pause the video
-- [ ] Show a visual cue (e.g., "Press play to continue" or a countdown) during the pause
-- [ ] Allow the user to resume playback manually or with a keyboard shortcut
+- [x] Add a toggle for "pause after each segment" mode
+- [x] Detect when a segment ends and auto-pause the video
+- [x] Show a visual cue (e.g., "Press play to continue" or a countdown) during the pause
+- [x] Allow the user to resume playback manually or with a keyboard shortcut
 
 ### Database Setup
 - [ ] Create SQLite database configuration in Flask (`flask-sqlalchemy`)
