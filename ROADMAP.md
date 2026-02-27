@@ -72,11 +72,11 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 - [x] Allow the user to resume playback manually or with a keyboard shortcut
 
 ### Database Setup
-- [ ] Create SQLite database configuration in Flask (`flask-sqlalchemy`)
-- [ ] Define `Video` model: `video_id`, `title`, `duration`, `thumbnail`, `transcript_json`, `created_at`
-- [ ] Define `Progress` model: `id`, `video_id`, `round`, `step`, `notes`, `created_at`
-- [ ] Create database initialization / migration script
-- [ ] Cache video metadata + transcript in the database on first fetch
+- [x] Create SQLite database configuration in Flask (`flask-sqlalchemy`)
+- [x] Define `Video` model: `video_id`, `title`, `duration`, `thumbnail`, `transcript_json`, `created_at`
+- [x] Define `Progress` model: `id`, `video_id`, `round`, `step`, `notes`, `created_at`
+- [x] Create database initialization / migration script
+- [x] Cache video metadata + transcript in the database on first fetch
 
 ### Checkpoint
 > **Done when:** The transcript highlights and scrolls in sync with the video. You can change playback speed, select a range of segments to loop, and enable pause-after-segment mode for shadowing practice.
@@ -88,31 +88,31 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 **Goal:** Record your voice, compare with the original, and navigate all five 100LS steps.
 
 ### Voice Recording
-- [ ] Create `hooks/useAudioRecorder.ts` wrapping the MediaRecorder API
-- [ ] Build `VoiceRecorder.tsx` component with record / stop / playback buttons
-- [ ] Request microphone permission and handle denial gracefully
-- [ ] Save recordings as audio blobs (in-memory for playback)
+- [x] Create `hooks/useAudioRecorder.ts` wrapping the MediaRecorder API
+- [x] Build `VoiceRecorder.tsx` component with record / stop / playback buttons
+- [x] Request microphone permission and handle denial gracefully
+- [x] Save recordings as audio blobs (in-memory for playback)
 - [ ] Optionally persist recordings to the backend (`services/audio_service.py`)
 
 ### Comparison Playback
-- [ ] Build comparison UI: play the original segment, then play the user's recording back-to-back
-- [ ] Allow side-by-side replay: "Play original" / "Play mine" buttons for the same segment
-- [ ] Display recording duration alongside segment duration for quick comparison
+- [x] Build comparison UI: play the original segment, then play the user's recording back-to-back
+- [x] Allow side-by-side replay: "Play original" / "Play mine" buttons for the same segment
+- [x] Display recording duration alongside segment duration for quick comparison
 
 ### 100LS Step Guide
-- [ ] Build `StepGuide.tsx` — step navigation bar showing all 5 steps with the current step highlighted
-- [ ] Implement step switching: clicking a step changes the UI mode
+- [x] Build `StepGuide.tsx` — step navigation bar showing all 5 steps with the current step highlighted
+- [x] Implement step switching: clicking a step changes the UI mode
 - [ ] Show recommended progression (suggest moving to the next step)
 
 ### Step-Specific UI States
-- [ ] **Step 1 — Contextual Immersion:** Hide transcript, play video normally
-- [ ] **Step 2 — Meaning Confirmation:** Show translated subtitles if available; indicate when translations are unavailable
-- [ ] **Step 3 — Sound-to-Text Linking:** Show English transcript with current-line highlighting (default playback view)
-- [ ] **Step 4 — Delayed Shadowing:** Enable pause-after-segment mode + voice recording automatically
-- [ ] **Step 5 — Pure Listening & Speaking:** Hide transcript, enable voice recording
+- [x] **Step 1 — Contextual Immersion:** Hide transcript, play video normally
+- [x] **Step 2 — Meaning Confirmation:** Show translated subtitles if available; indicate when translations are unavailable
+- [x] **Step 3 — Sound-to-Text Linking:** Show English transcript with current-line highlighting (default playback view)
+- [x] **Step 4 — Delayed Shadowing:** Enable pause-after-segment mode + voice recording automatically
+- [x] **Step 5 — Pure Listening & Speaking:** Hide transcript, enable voice recording
 
 ### Integration
-- [ ] Wire step state to `VideoPlayer`, `TranscriptPanel`, `PlaybackControls`, and `VoiceRecorder`
+- [x] Wire step state to `VideoPlayer`, `TranscriptPanel`, `PlaybackControls`, and `VoiceRecorder`
 - [ ] Persist the user's current step per video in the backend
 
 ### Checkpoint

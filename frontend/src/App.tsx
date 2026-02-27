@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { YouTubePlayer } from 'react-youtube';
-import type { Video, LoopRange } from './types';
+import type { Video, LoopRange, ShadowingStep } from './types';
 import { fetchVideo } from './api/client';
 import { usePlayerSync } from './hooks/usePlayerSync';
 import { usePlaybackControls } from './hooks/usePlaybackControls';
+import { useAudioRecorder } from './hooks/useAudioRecorder';
 import VideoPlayer from './components/VideoPlayer';
 import PlaybackControls from './components/PlaybackControls';
 import TranscriptPanel from './components/TranscriptPanel';
+import StepGuide from './components/StepGuide';
+import VoiceRecorder from './components/VoiceRecorder';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -14,6 +17,9 @@ function App() {
   const [player, setPlayer] = useState<YouTubePlayer | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 100LS step state (default: step 3 — matches existing transcript view)
+  const [currentStep, setCurrentStep] = useState<ShadowingStep>(3);
 
   // Playback control state
   const [loopRange, setLoopRange] = useState<LoopRange | null>(null);
@@ -24,6 +30,12 @@ function App() {
   const transcript = video?.transcript ?? [];
   const { activeSegmentIndex, isPlaying } = usePlayerSync(player, transcript);
   const { playbackRate, setSpeed, seekTo, play, pause } = usePlaybackControls(player);
+  const recorder = useAudioRecorder();
+
+  // Derive visibility flags from current step
+  const showTranscript = currentStep === 2 || currentStep === 3 || currentStep === 4;
+  const enableRecording = currentStep === 4 || currentStep === 5;
+  const showControls = currentStep !== 1;
 
   // Track previous segment for pause-after-segment detection
   const prevSegmentRef = useRef(activeSegmentIndex);
@@ -31,6 +43,15 @@ function App() {
   // Shift+click state for loop range selection
   const shiftClickCountRef = useRef(0);
   const loopStartRef = useRef(0);
+
+  const handleStepChange = useCallback((step: ShadowingStep) => {
+    setCurrentStep(step);
+
+    // Auto-configure: Step 4 enables pause-after-segment
+    if (step === 4) {
+      setPauseAfterSegment(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +66,7 @@ function App() {
       setLoopEnabled(false);
       setPauseAfterSegment(false);
       setPausedBanner(false);
+      recorder.clearRecording();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -62,19 +84,16 @@ function App() {
     (index: number) => {
       const clickNum = shiftClickCountRef.current;
       if (clickNum === 0) {
-        // First shift+click: set start
         loopStartRef.current = index;
         shiftClickCountRef.current = 1;
         setLoopRange({ startIndex: index, endIndex: index });
       } else if (clickNum === 1) {
-        // Second shift+click: set end (ensure start <= end)
         const start = Math.min(loopStartRef.current, index);
         const end = Math.max(loopStartRef.current, index);
         setLoopRange({ startIndex: start, endIndex: end });
         setLoopEnabled(true);
         shiftClickCountRef.current = 2;
       } else {
-        // Third shift+click: reset
         setLoopRange(null);
         setLoopEnabled(false);
         shiftClickCountRef.current = 0;
@@ -82,6 +101,14 @@ function App() {
     },
     [],
   );
+
+  // "Play Original": seek to the active segment's start and play
+  const handlePlayOriginal = useCallback(() => {
+    if (activeSegmentIndex >= 0 && transcript[activeSegmentIndex]) {
+      seekTo(transcript[activeSegmentIndex].start);
+      play();
+    }
+  }, [activeSegmentIndex, transcript, seekTo, play]);
 
   // Loop: when active segment exceeds loop end, seek back to start
   useEffect(() => {
@@ -162,6 +189,8 @@ function App() {
 
         {video && (
           <div className="space-y-4">
+            <StepGuide currentStep={currentStep} onStepChange={handleStepChange} />
+
             <h2 className="text-lg font-semibold text-gray-800">{video.title}</h2>
 
             <VideoPlayer
@@ -169,14 +198,16 @@ function App() {
               onReady={setPlayer}
             />
 
-            <PlaybackControls
-              playbackRate={playbackRate}
-              onSpeedChange={setSpeed}
-              loopEnabled={loopEnabled}
-              onLoopToggle={() => setLoopEnabled((prev) => !prev)}
-              pauseAfterSegment={pauseAfterSegment}
-              onPauseAfterSegmentToggle={() => setPauseAfterSegment((prev) => !prev)}
-            />
+            {showControls && (
+              <PlaybackControls
+                playbackRate={playbackRate}
+                onSpeedChange={setSpeed}
+                loopEnabled={loopEnabled}
+                onLoopToggle={() => setLoopEnabled((prev) => !prev)}
+                pauseAfterSegment={pauseAfterSegment}
+                onPauseAfterSegmentToggle={() => setPauseAfterSegment((prev) => !prev)}
+              />
+            )}
 
             {pausedBanner && (
               <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-2 rounded-lg">
@@ -184,13 +215,34 @@ function App() {
               </div>
             )}
 
-            <TranscriptPanel
-              transcript={transcript}
-              onSegmentClick={handleSegmentClick}
-              activeSegmentIndex={activeSegmentIndex}
-              loopRange={loopRange}
-              onSegmentShiftClick={handleSegmentShiftClick}
-            />
+            {currentStep === 2 && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-lg">
+                Translation not available yet. Use an external dictionary or translation tool while reviewing the transcript below.
+              </div>
+            )}
+
+            {showTranscript && (
+              <TranscriptPanel
+                transcript={transcript}
+                onSegmentClick={handleSegmentClick}
+                activeSegmentIndex={activeSegmentIndex}
+                loopRange={loopRange}
+                onSegmentShiftClick={handleSegmentShiftClick}
+              />
+            )}
+
+            {enableRecording && (
+              <VoiceRecorder
+                status={recorder.status}
+                permission={recorder.permission}
+                recording={recorder.recording}
+                disabled={false}
+                onStartRecording={recorder.startRecording}
+                onStopRecording={recorder.stopRecording}
+                onClearRecording={recorder.clearRecording}
+                onPlayOriginal={handlePlayOriginal}
+              />
+            )}
           </div>
         )}
       </div>
