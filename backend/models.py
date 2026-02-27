@@ -44,4 +44,6 @@ class Progress(db.Model):
         db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
-    video = db.relationship("Video", backref=db.backref("progress_entries", lazy=True))
+    video = db.relationship(
+        "Video", backref=db.backref("progress_entries", lazy=True, cascade="all, delete-orphan")
+    )

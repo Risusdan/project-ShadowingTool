@@ -1,19 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { YouTubePlayer } from 'react-youtube';
 import type { Video, LoopRange, ShadowingStep } from './types';
-import { fetchVideo } from './api/client';
+import { fetchVideo, fetchVideoById } from './api/client';
 import { usePlayerSync } from './hooks/usePlayerSync';
 import { usePlaybackControls } from './hooks/usePlaybackControls';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
 import { useProgress } from './hooks/useProgress';
+import { useLibrary } from './hooks/useLibrary';
 import VideoPlayer from './components/VideoPlayer';
 import PlaybackControls from './components/PlaybackControls';
 import TranscriptPanel from './components/TranscriptPanel';
 import StepGuide from './components/StepGuide';
 import ProgressTracker from './components/ProgressTracker';
 import VoiceRecorder from './components/VoiceRecorder';
+import VideoLibrary from './components/VideoLibrary';
+
+type View = 'library' | 'player';
 
 function App() {
+  const [view, setView] = useState<View>('library');
   const [url, setUrl] = useState('');
   const [video, setVideo] = useState<Video | null>(null);
   const [player, setPlayer] = useState<YouTubePlayer | null>(null);
@@ -34,6 +39,7 @@ function App() {
   const { playbackRate, setSpeed, seekTo, play, pause } = usePlaybackControls(player);
   const recorder = useAudioRecorder();
   const progress = useProgress(video?.video_id ?? null);
+  const library = useLibrary();
 
   // Derive visibility flags from current step
   const showTranscript = currentStep === 2 || currentStep === 3 || currentStep === 4;
@@ -46,6 +52,14 @@ function App() {
   // Shift+click state for loop range selection
   const shiftClickCountRef = useRef(0);
   const loopStartRef = useRef(0);
+
+  const resetPlayerState = useCallback(() => {
+    setLoopRange(null);
+    setLoopEnabled(false);
+    setPauseAfterSegment(false);
+    setPausedBanner(false);
+    recorder.clearRecording();
+  }, [recorder]);
 
   const handleCompleteRound = useCallback(
     (notes?: string) => {
@@ -71,18 +85,49 @@ function App() {
     try {
       const data = await fetchVideo(url);
       setVideo(data);
-      // Reset playback state for new video
-      setLoopRange(null);
-      setLoopEnabled(false);
-      setPauseAfterSegment(false);
-      setPausedBanner(false);
-      recorder.clearRecording();
+      resetPlayerState();
+      setView('player');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSelectVideo = useCallback(async (videoId: string) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const data = await fetchVideoById(videoId);
+      setVideo(data);
+      setLoopRange(null);
+      setLoopEnabled(false);
+      setPauseAfterSegment(false);
+      setPausedBanner(false);
+      setView('player');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleRemoveVideo = useCallback(async (videoId: string) => {
+    await library.removeVideo(videoId);
+    // If the currently loaded video was removed, clear it
+    if (video?.video_id === videoId) {
+      setVideo(null);
+      setPlayer(null);
+    }
+  }, [library, video]);
+
+  const handleBackToLibrary = useCallback(() => {
+    setVideo(null);
+    setPlayer(null);
+    setView('library');
+    library.refresh();
+  }, [library]);
 
   const handleSegmentClick = (startTime: number) => {
     seekTo(startTime);
@@ -197,8 +242,25 @@ function App() {
           <p className="text-red-600 text-sm mb-4">{error}</p>
         )}
 
-        {video && (
+        {view === 'library' && (
+          <VideoLibrary
+            videos={library.videos}
+            loading={library.loading}
+            error={library.error}
+            onSelectVideo={handleSelectVideo}
+            onRemoveVideo={handleRemoveVideo}
+          />
+        )}
+
+        {view === 'player' && video && (
           <div className="space-y-4">
+            <button
+              onClick={handleBackToLibrary}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              &larr; Back to Library
+            </button>
+
             <StepGuide currentStep={currentStep} onStepChange={handleStepChange} />
 
             <ProgressTracker

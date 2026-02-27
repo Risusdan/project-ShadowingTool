@@ -62,6 +62,16 @@ export interface ProgressResponse {
   entries: ProgressEntry[];
 }
 
+/** Video summary for the library view (no transcript). */
+export interface LibraryVideo {
+  video_id: string;
+  title: string;
+  duration: number;
+  thumbnail: string;
+  last_practiced: string | null;
+  current_round: number;
+}
+
 /** Video metadata and full transcript returned by the backend API. */
 export interface Video {
   /** The 11-character YouTube video ID. */

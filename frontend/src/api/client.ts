@@ -5,7 +5,7 @@
  * proxies requests to the Flask backend.
  */
 
-import type { Video, ProgressEntry, ProgressResponse } from '../types';
+import type { Video, LibraryVideo, ProgressEntry, ProgressResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -96,4 +96,46 @@ export async function saveProgress(
   }
 
   return res.json();
+}
+
+/**
+ * Fetch the video library — all cached videos without transcript.
+ */
+export async function fetchLibrary(): Promise<LibraryVideo[]> {
+  const res = await fetch(`${API_BASE}/videos`);
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Failed to fetch library');
+  }
+
+  return res.json();
+}
+
+/**
+ * Fetch a single video by ID (full data including transcript).
+ */
+export async function fetchVideoById(videoId: string): Promise<Video> {
+  const res = await fetch(`${API_BASE}/video/${videoId}`);
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Failed to fetch video');
+  }
+
+  return res.json();
+}
+
+/**
+ * Delete a video and all its progress entries.
+ */
+export async function deleteVideo(videoId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/video/${videoId}`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Failed to delete video');
+  }
 }

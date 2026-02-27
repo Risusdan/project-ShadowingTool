@@ -133,10 +133,10 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 - [x] Implement `GET /api/progress/<video_id>` endpoint: return progress history
 
 ### Video Library
-- [ ] Add a "library" view listing all previously practiced videos
-- [ ] Show thumbnail, title, last practiced date, and current round for each video
-- [ ] Allow selecting a video from the library to resume practice
-- [ ] Add a way to remove videos from the library
+- [x] Add a "library" view listing all previously practiced videos
+- [x] Show thumbnail, title, last practiced date, and current round for each video
+- [x] Allow selecting a video from the library to resume practice
+- [x] Add a way to remove videos from the library
 
 ### UI Polish
 - [ ] Add loading spinners / skeleton states while fetching video data

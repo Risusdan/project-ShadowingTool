@@ -5,7 +5,7 @@ from yt_dlp.utils import DownloadError
 from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled
 
 from app import db
-from models import Video
+from models import Progress, Video
 from services.youtube_service import (
     extract_video_id,
     fetch_transcript,
@@ -86,3 +86,51 @@ def get_transcript(video_id: str) -> tuple[Response, int] | Response:
         return jsonify({"error": "Video not found"}), 404
 
     return jsonify({"video_id": video.video_id, "transcript": video.transcript_json})
+
+
+@video_bp.route("/videos", methods=["GET"])
+def list_videos() -> Response:
+    """Return all cached videos without transcript, sorted by last practiced."""
+    videos = Video.query.all()
+
+    result = []
+    for v in videos:
+        latest = (
+            Progress.query.filter_by(video_id=v.video_id)
+            .order_by(Progress.created_at.desc())
+            .first()
+        )
+        result.append({
+            "video_id": v.video_id,
+            "title": v.title,
+            "duration": v.duration,
+            "thumbnail": v.thumbnail,
+            "last_practiced": latest.created_at.isoformat() if latest else None,
+            "current_round": latest.round if latest else 0,
+        })
+
+    # Sort by last_practiced descending (None values last)
+    result.sort(key=lambda x: x["last_practiced"] or "", reverse=True)
+    return jsonify(result)
+
+
+@video_bp.route("/video/<video_id>", methods=["GET"])
+def get_video(video_id: str) -> tuple[Response, int] | Response:
+    """Return full cached video with transcript."""
+    video = db.session.get(Video, video_id)
+    if not video:
+        return jsonify({"error": "Video not found"}), 404
+
+    return jsonify(_video_to_dict(video))
+
+
+@video_bp.route("/video/<video_id>", methods=["DELETE"])
+def delete_video(video_id: str) -> tuple[Response, int] | Response:
+    """Delete a video and all its progress entries (cascade)."""
+    video = db.session.get(Video, video_id)
+    if not video:
+        return jsonify({"error": "Video not found"}), 404
+
+    db.session.delete(video)
+    db.session.commit()
+    return jsonify({"message": "Video deleted"})
