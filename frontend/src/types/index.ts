@@ -44,6 +44,24 @@ export const STEP_LABELS: Record<ShadowingStep, string> = {
   5: 'Pure Listening & Speaking',
 };
 
+// --- Progress Types ---
+
+export interface ProgressEntry {
+  id: number;
+  video_id: string;
+  round: number;
+  step: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ProgressResponse {
+  video_id: string;
+  current_round: number;
+  current_step: number;
+  entries: ProgressEntry[];
+}
+
 /** Video metadata and full transcript returned by the backend API. */
 export interface Video {
   /** The 11-character YouTube video ID. */

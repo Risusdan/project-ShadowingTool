@@ -5,10 +5,12 @@ import { fetchVideo } from './api/client';
 import { usePlayerSync } from './hooks/usePlayerSync';
 import { usePlaybackControls } from './hooks/usePlaybackControls';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
+import { useProgress } from './hooks/useProgress';
 import VideoPlayer from './components/VideoPlayer';
 import PlaybackControls from './components/PlaybackControls';
 import TranscriptPanel from './components/TranscriptPanel';
 import StepGuide from './components/StepGuide';
+import ProgressTracker from './components/ProgressTracker';
 import VoiceRecorder from './components/VoiceRecorder';
 
 function App() {
@@ -31,6 +33,7 @@ function App() {
   const { activeSegmentIndex, isPlaying } = usePlayerSync(player, transcript);
   const { playbackRate, setSpeed, seekTo, play, pause } = usePlaybackControls(player);
   const recorder = useAudioRecorder();
+  const progress = useProgress(video?.video_id ?? null);
 
   // Derive visibility flags from current step
   const showTranscript = currentStep === 2 || currentStep === 3 || currentStep === 4;
@@ -43,6 +46,13 @@ function App() {
   // Shift+click state for loop range selection
   const shiftClickCountRef = useRef(0);
   const loopStartRef = useRef(0);
+
+  const handleCompleteRound = useCallback(
+    (notes?: string) => {
+      progress.completeRound(currentStep, notes);
+    },
+    [progress, currentStep],
+  );
 
   const handleStepChange = useCallback((step: ShadowingStep) => {
     setCurrentStep(step);
@@ -190,6 +200,13 @@ function App() {
         {video && (
           <div className="space-y-4">
             <StepGuide currentStep={currentStep} onStepChange={handleStepChange} />
+
+            <ProgressTracker
+              currentRound={progress.currentRound}
+              loading={progress.loading}
+              error={progress.error}
+              onCompleteRound={handleCompleteRound}
+            />
 
             <h2 className="text-lg font-semibold text-gray-800">{video.title}</h2>
 

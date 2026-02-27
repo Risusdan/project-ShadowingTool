@@ -125,12 +125,12 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 **Goal:** Track rounds, polish the UI, fix bugs, and prepare the app for daily personal use.
 
 ### Progress Tracker
-- [ ] Build `ProgressTracker.tsx` — display current round (e.g., "Round 12 / 100")
-- [ ] Implement round increment: button or auto-increment after completing a full pass
-- [ ] Track which 100LS step the user is on per round
-- [ ] Add optional notes field per round
-- [ ] Implement `POST /api/progress` endpoint: save round, step, and notes
-- [ ] Implement `GET /api/progress/<video_id>` endpoint: return progress history
+- [x] Build `ProgressTracker.tsx` — display current round (e.g., "Round 12 / 100")
+- [x] Implement round increment: button or auto-increment after completing a full pass
+- [x] Track which 100LS step the user is on per round
+- [x] Add optional notes field per round
+- [x] Implement `POST /api/progress` endpoint: save round, step, and notes
+- [x] Implement `GET /api/progress/<video_id>` endpoint: return progress history
 
 ### Video Library
 - [ ] Add a "library" view listing all previously practiced videos

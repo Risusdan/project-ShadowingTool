@@ -36,8 +36,10 @@ def create_app(testing: bool = False) -> Flask:
 
     # Register blueprints
     from routes.video import video_bp
+    from routes.progress import progress_bp
 
     app.register_blueprint(video_bp, url_prefix="/api")
+    app.register_blueprint(progress_bp, url_prefix="/api")
 
     # Create tables
     with app.app_context():
