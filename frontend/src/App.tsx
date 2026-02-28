@@ -17,6 +17,8 @@ import StepGuide from './components/StepGuide';
 import ProgressTracker from './components/ProgressTracker';
 import VoiceRecorder from './components/VoiceRecorder';
 import VideoLibrary from './components/VideoLibrary';
+import KeyboardHints from './components/KeyboardHints';
+import FadeIn from './components/FadeIn';
 import Spinner from './components/Spinner';
 
 type View = 'library' | 'player';
@@ -31,6 +33,7 @@ function App() {
 
   // 100LS step state
   const [currentStep, setCurrentStep] = useState<ShadowingStep>(1);
+  const [recommendedStep, setRecommendedStep] = useState<ShadowingStep | undefined>(undefined);
 
   // Playback control state
   const [loopRange, setLoopRange] = useState<LoopRange | null>(null);
@@ -74,6 +77,7 @@ function App() {
 
   const handleStepChange = useCallback((step: ShadowingStep) => {
     setCurrentStep(step);
+    setRecommendedStep(undefined);
 
     // Auto-configure: Step 4 enables pause-after-segment
     if (step === 4) {
@@ -328,70 +332,91 @@ function App() {
               Back to Library
             </button>
 
-            <StepGuide currentStep={currentStep} onStepChange={handleStepChange} />
+            <StepGuide currentStep={currentStep} onStepChange={handleStepChange} recommendedStep={recommendedStep} />
 
             <ProgressTracker
               currentRound={progress.currentRound}
               loading={progress.loading}
               error={progress.error}
               onCompleteRound={handleCompleteRound}
+              currentStep={currentStep}
+              onAdvanceStep={handleStepChange}
             />
 
-            <h2 className="text-lg font-semibold text-gray-800">{video.title}</h2>
+            {/* Video Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+              <h2 className="text-lg font-semibold text-gray-800">{video.title}</h2>
 
-            <VideoPlayer
-              videoId={video.video_id}
-              onReady={setPlayer}
-            />
-
-            <p className="text-xs text-gray-400">
-              Shortcuts: Space play/pause &middot; &larr;&rarr; prev/next &middot; R record
-            </p>
-
-            {showControls && (
-              <PlaybackControls
-                playbackRate={playbackRate}
-                onSpeedChange={setSpeed}
-                loopEnabled={loopEnabled}
-                onLoopToggle={() => setLoopEnabled((prev) => !prev)}
-                pauseAfterSegment={pauseAfterSegment}
-                onPauseAfterSegmentToggle={() => setPauseAfterSegment((prev) => !prev)}
+              <VideoPlayer
+                videoId={video.video_id}
+                onReady={setPlayer}
               />
-            )}
 
-            {pausedBanner && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-2 rounded-lg">
-                Paused — press Space to continue
+              <KeyboardHints showRecording={enableRecording} />
+
+              <FadeIn show={showControls}>
+                <PlaybackControls
+                  playbackRate={playbackRate}
+                  onSpeedChange={setSpeed}
+                  loopEnabled={loopEnabled}
+                  onLoopToggle={() => setLoopEnabled((prev) => !prev)}
+                  pauseAfterSegment={pauseAfterSegment}
+                  onPauseAfterSegmentToggle={() => setPauseAfterSegment((prev) => !prev)}
+                />
+              </FadeIn>
+
+              {pausedBanner && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">Segment paused</p>
+                    <p className="text-xs text-amber-600">
+                      Press <kbd className="px-1 py-0.5 bg-amber-100 border border-amber-300 rounded text-[10px] font-mono">Space</kbd> to continue
+                      {enableRecording && (
+                        <> or <kbd className="px-1 py-0.5 bg-amber-100 border border-amber-300 rounded text-[10px] font-mono">R</kbd> to record</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Practice Card — only render when there's practice content */}
+            {(showTranscript || enableRecording) && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                {currentStep === 2 && (
+                  <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-lg">
+                    Translation not available yet. Use an external dictionary or translation tool while reviewing the transcript below.
+                  </div>
+                )}
+
+                <FadeIn show={showTranscript}>
+                  <TranscriptPanel
+                    transcript={transcript}
+                    onSegmentClick={handleSegmentClick}
+                    activeSegmentIndex={activeSegmentIndex}
+                    loopRange={loopRange}
+                    onSegmentShiftClick={handleSegmentShiftClick}
+                  />
+                </FadeIn>
+
+                <FadeIn show={enableRecording}>
+                  <VoiceRecorder
+                    status={recorder.status}
+                    permission={recorder.permission}
+                    recording={recorder.recording}
+                    disabled={false}
+                    onStartRecording={recorder.startRecording}
+                    onStopRecording={recorder.stopRecording}
+                    onClearRecording={recorder.clearRecording}
+                    onPlayOriginal={handlePlayOriginal}
+                  />
+                </FadeIn>
               </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-lg">
-                Translation not available yet. Use an external dictionary or translation tool while reviewing the transcript below.
-              </div>
-            )}
-
-            {showTranscript && (
-              <TranscriptPanel
-                transcript={transcript}
-                onSegmentClick={handleSegmentClick}
-                activeSegmentIndex={activeSegmentIndex}
-                loopRange={loopRange}
-                onSegmentShiftClick={handleSegmentShiftClick}
-              />
-            )}
-
-            {enableRecording && (
-              <VoiceRecorder
-                status={recorder.status}
-                permission={recorder.permission}
-                recording={recorder.recording}
-                disabled={false}
-                onStartRecording={recorder.startRecording}
-                onStopRecording={recorder.stopRecording}
-                onClearRecording={recorder.clearRecording}
-                onPlayOriginal={handlePlayOriginal}
-              />
             )}
           </div>
         )}
