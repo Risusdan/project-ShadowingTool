@@ -153,7 +153,7 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 - [x] Fix any playback sync drift issues
 
 ### Documentation
-- [ ] Write `README.md` with project overview, setup instructions, and usage guide
+- [x] Write `README.md` with project overview, setup instructions, and usage guide
 
 ### Checkpoint
 > **Done when:** You can track your round progress per video, see a library of all practiced videos, and the app feels stable and polished enough for daily personal use. README is written.
