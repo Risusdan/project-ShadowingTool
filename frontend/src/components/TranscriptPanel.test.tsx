@@ -78,4 +78,14 @@ describe('TranscriptPanel', () => {
     const activeItem = screen.getByText('Second line').closest('li');
     expect(activeItem?.className).toMatch(/bg-blue-100/);
   });
+
+  it('renders empty state when transcript is empty', () => {
+    render(<TranscriptPanel {...defaultProps} transcript={[]} />);
+    expect(screen.getByText('No transcript segments available')).toBeInTheDocument();
+  });
+
+  it('does not render list role when transcript is empty', () => {
+    render(<TranscriptPanel {...defaultProps} transcript={[]} />);
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  });
 });
