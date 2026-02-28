@@ -29,8 +29,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
-  // 100LS step state (default: step 3 — matches existing transcript view)
-  const [currentStep, setCurrentStep] = useState<ShadowingStep>(3);
+  // 100LS step state
+  const [currentStep, setCurrentStep] = useState<ShadowingStep>(1);
 
   // Playback control state
   const [loopRange, setLoopRange] = useState<LoopRange | null>(null);
