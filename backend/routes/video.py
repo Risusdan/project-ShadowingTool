@@ -53,8 +53,16 @@ def create_video() -> tuple[Response, int] | Response:
     try:
         metadata = fetch_video_metadata(video_id)
         transcript = fetch_transcript(video_id)
-    except (DownloadError, NoTranscriptFound, TranscriptsDisabled) as e:
-        return jsonify({"error": f"Failed to fetch video data: {e}"}), 502
+    except (NoTranscriptFound, TranscriptsDisabled):
+        return jsonify({
+            "error": "Transcript is unavailable for this video",
+            "error_code": "TRANSCRIPT_UNAVAILABLE",
+        }), 422
+    except DownloadError as e:
+        return jsonify({
+            "error": f"Failed to fetch video data: {e}",
+            "error_code": "VIDEO_UNAVAILABLE",
+        }), 502
 
     # Persist to database
     video = Video(

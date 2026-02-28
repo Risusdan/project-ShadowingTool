@@ -2,9 +2,10 @@
 
 import os
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.exceptions import HTTPException
 
 db = SQLAlchemy()
 
@@ -40,6 +41,21 @@ def create_app(testing: bool = False) -> Flask:
 
     app.register_blueprint(video_bp, url_prefix="/api")
     app.register_blueprint(progress_bp, url_prefix="/api")
+
+    # Global JSON error handlers
+    @app.errorhandler(404)
+    def not_found(e: HTTPException):
+        return jsonify({"error": "Not found", "error_code": "NOT_FOUND"}), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(e: HTTPException):
+        return jsonify({"error": "Method not allowed", "error_code": "METHOD_NOT_ALLOWED"}), 405
+
+    @app.errorhandler(Exception)
+    def internal_error(e: Exception):
+        if isinstance(e, HTTPException):
+            return jsonify({"error": e.description, "error_code": "HTTP_ERROR"}), e.code
+        return jsonify({"error": "Internal server error", "error_code": "INTERNAL_ERROR"}), 500
 
     # Create tables
     with app.app_context():

@@ -3,6 +3,8 @@
 from unittest.mock import patch
 
 import pytest
+from yt_dlp.utils import DownloadError
+from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled
 
 
 @pytest.fixture()
@@ -71,6 +73,68 @@ class TestPostVideo:
         assert resp.status_code == 200
         # Metadata was only fetched once
         mock_metadata.assert_called_once()
+
+    @patch("routes.video.fetch_video_metadata")
+    @patch("routes.video.fetch_transcript")
+    def test_no_transcript_returns_422(self, mock_transcript, mock_metadata, client):
+        mock_metadata.side_effect = NoTranscriptFound(
+            "dQw4w9WgXcQ", ["en"], "No transcript found"
+        )
+        resp = client.post(
+            "/api/video",
+            json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+        )
+        assert resp.status_code == 422
+        data = resp.get_json()
+        assert data["error_code"] == "TRANSCRIPT_UNAVAILABLE"
+        assert "error" in data
+
+    @patch("routes.video.fetch_video_metadata")
+    @patch("routes.video.fetch_transcript")
+    def test_transcripts_disabled_returns_422(
+        self, mock_transcript, mock_metadata, client
+    ):
+        mock_metadata.side_effect = TranscriptsDisabled("dQw4w9WgXcQ")
+        resp = client.post(
+            "/api/video",
+            json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+        )
+        assert resp.status_code == 422
+        data = resp.get_json()
+        assert data["error_code"] == "TRANSCRIPT_UNAVAILABLE"
+
+    @patch("routes.video.fetch_video_metadata")
+    @patch("routes.video.fetch_transcript")
+    def test_download_error_returns_502(
+        self, mock_transcript, mock_metadata, client
+    ):
+        mock_metadata.side_effect = DownloadError("Video unavailable")
+        resp = client.post(
+            "/api/video",
+            json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+        )
+        assert resp.status_code == 502
+        data = resp.get_json()
+        assert data["error_code"] == "VIDEO_UNAVAILABLE"
+        assert "error" in data
+
+
+class TestGlobalErrorHandlers:
+    """Test that Flask returns JSON (not HTML) for standard HTTP errors."""
+
+    def test_404_returns_json(self, client):
+        resp = client.get("/api/nonexistent")
+        assert resp.status_code == 404
+        data = resp.get_json()
+        assert data["error_code"] == "NOT_FOUND"
+        assert "error" in data
+
+    def test_405_returns_json(self, client):
+        resp = client.put("/api/video", json={})
+        assert resp.status_code == 405
+        data = resp.get_json()
+        assert data["error_code"] == "METHOD_NOT_ALLOWED"
+        assert "error" in data
 
 
 class TestGetTranscript:
