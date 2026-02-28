@@ -4,10 +4,9 @@ import os
 
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.exceptions import HTTPException
 
-db = SQLAlchemy()
+from extensions import db
 
 
 def create_app(testing: bool = False) -> Flask:
@@ -55,6 +54,7 @@ def create_app(testing: bool = False) -> Flask:
     def internal_error(e: Exception):
         if isinstance(e, HTTPException):
             return jsonify({"error": e.description, "error_code": "HTTP_ERROR"}), e.code
+        app.logger.exception("Unhandled exception")
         return jsonify({"error": "Internal server error", "error_code": "INTERNAL_ERROR"}), 500
 
     # Create tables

@@ -2,7 +2,7 @@
 
 from flask import Blueprint, Response, jsonify, request
 
-from app import db
+from extensions import db
 from models import Progress, Video
 
 progress_bp = Blueprint("progress", __name__)

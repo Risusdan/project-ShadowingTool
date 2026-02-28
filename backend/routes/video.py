@@ -4,7 +4,7 @@ from flask import Blueprint, Response, jsonify, request
 from yt_dlp.utils import DownloadError
 from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled
 
-from app import db
+from extensions import db
 from models import Progress, Video
 from services.youtube_service import (
     extract_video_id,

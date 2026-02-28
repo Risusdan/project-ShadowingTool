@@ -5,7 +5,8 @@ from flask import Flask
 from flask.testing import FlaskClient
 from flask_sqlalchemy import SQLAlchemy
 
-from app import create_app, db as _db
+from app import create_app
+from extensions import db as _db
 from models import Video
 
 
