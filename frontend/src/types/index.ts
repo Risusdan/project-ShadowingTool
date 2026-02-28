@@ -44,6 +44,22 @@ export const STEP_LABELS: Record<ShadowingStep, string> = {
   5: 'Pure Listening & Speaking',
 };
 
+export const STEP_DESCRIPTIONS: Record<ShadowingStep, string> = {
+  1: 'Watch without subtitles to absorb rhythm and context',
+  2: 'Read the transcript and confirm meaning',
+  3: 'Listen while following the transcript text',
+  4: 'Pause after each segment and repeat aloud',
+  5: 'Shadow freely without transcript support',
+};
+
+export const STEP_FEATURES: Record<ShadowingStep, string[]> = {
+  1: ['Video'],
+  2: ['Video', 'Transcript', 'Speed'],
+  3: ['Video', 'Transcript', 'Speed', 'Loop'],
+  4: ['Video', 'Transcript', 'Speed', 'Recording'],
+  5: ['Video', 'Speed', 'Recording'],
+};
+
 // --- Progress Types ---
 
 export interface ProgressEntry {

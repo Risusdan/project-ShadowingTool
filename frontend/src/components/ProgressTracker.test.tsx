@@ -8,6 +8,8 @@ describe('ProgressTracker', () => {
     loading: false,
     error: '',
     onCompleteRound: vi.fn(),
+    currentStep: 1 as const,
+    onAdvanceStep: vi.fn(),
   };
 
   beforeEach(() => {
@@ -96,5 +98,61 @@ describe('ProgressTracker', () => {
     expect(screen.getByText(/round 100 \/ 100/i)).toBeInTheDocument();
     const bar = screen.getByRole('progressbar');
     expect(bar).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  // --- Phase 2: Post-Round Completion Prompt ---
+
+  it('shows completion prompt after round increments', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ProgressTracker {...defaults} currentRound={12} />);
+
+    // Click Complete Round
+    await user.click(screen.getByRole('button', { name: /complete round/i }));
+
+    // Simulate parent updating currentRound after successful save
+    rerender(<ProgressTracker {...defaults} currentRound={13} />);
+
+    expect(screen.getByText(/continue practicing/i)).toBeInTheDocument();
+    expect(screen.getByText(/advance to step 2/i)).toBeInTheDocument();
+  });
+
+  it('dismisses completion prompt on "Continue practicing"', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ProgressTracker {...defaults} currentRound={12} />);
+
+    await user.click(screen.getByRole('button', { name: /complete round/i }));
+    rerender(<ProgressTracker {...defaults} currentRound={13} />);
+
+    await user.click(screen.getByRole('button', { name: /continue practicing/i }));
+    expect(screen.queryByText(/continue practicing/i)).not.toBeInTheDocument();
+  });
+
+  it('calls onAdvanceStep when "Advance" is clicked', async () => {
+    const user = userEvent.setup();
+    const onAdvanceStep = vi.fn();
+    const { rerender } = render(
+      <ProgressTracker {...defaults} currentStep={2} onAdvanceStep={onAdvanceStep} currentRound={12} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /complete round/i }));
+    rerender(
+      <ProgressTracker {...defaults} currentStep={2} onAdvanceStep={onAdvanceStep} currentRound={13} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /advance to step 3/i }));
+    expect(onAdvanceStep).toHaveBeenCalledWith(3);
+  });
+
+  it('hides advance button on step 5', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <ProgressTracker {...defaults} currentStep={5} currentRound={12} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /complete round/i }));
+    rerender(<ProgressTracker {...defaults} currentStep={5} currentRound={13} />);
+
+    expect(screen.getByText(/continue practicing/i)).toBeInTheDocument();
+    expect(screen.queryByText(/advance to step/i)).not.toBeInTheDocument();
   });
 });

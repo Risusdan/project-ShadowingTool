@@ -97,6 +97,17 @@ export default function TranscriptPanel({
 
   return (
     <div className="h-64 sm:h-96 overflow-y-auto border border-gray-200 rounded-lg">
+      <div className="sticky top-0 z-10 flex items-center justify-between bg-gray-50 border-b border-gray-200 px-4 py-1.5 text-xs text-gray-500">
+        <span>Click a segment to jump</span>
+        <div className="relative group">
+          <svg className="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="invisible group-hover:visible absolute right-0 top-full mt-1 w-52 bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg z-20">
+            Shift+Click to select loop range: 1st = start, 2nd = end, 3rd = clear
+          </div>
+        </div>
+      </div>
       <ul className="divide-y divide-gray-100" role="list" aria-label="Transcript segments">
         {transcript.map((segment, index) => (
           <TranscriptSegmentItem

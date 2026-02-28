@@ -88,4 +88,22 @@ describe('TranscriptPanel', () => {
     render(<TranscriptPanel {...defaultProps} transcript={[]} />);
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
+
+  // --- Phase 3: Header hints ---
+
+  it('renders "Click a segment to jump" hint', () => {
+    render(<TranscriptPanel {...defaultProps} />);
+    expect(screen.getByText(/click a segment to jump/i)).toBeInTheDocument();
+  });
+
+  it('renders loop selection tooltip with Shift+Click info', () => {
+    render(<TranscriptPanel {...defaultProps} />);
+    // The tooltip text is in the DOM (CSS-hidden until hover)
+    expect(screen.getByText(/shift\+click to select loop range/i)).toBeInTheDocument();
+  });
+
+  it('does not render header hints in empty state', () => {
+    render(<TranscriptPanel {...defaultProps} transcript={[]} />);
+    expect(screen.queryByText(/click a segment to jump/i)).not.toBeInTheDocument();
+  });
 });
