@@ -146,11 +146,11 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 - [x] Visual polish: consistent spacing, typography, color scheme
 
 ### Bug Fixes & Edge Cases
-- [ ] Handle videos with no available captions gracefully
-- [ ] Handle very long transcripts (virtualized scrolling if needed)
-- [ ] Handle network interruptions during video fetch
-- [ ] Test with various YouTube video types (short, long, live recordings, music)
-- [ ] Fix any playback sync drift issues
+- [x] Handle videos with no available captions gracefully
+- [x] Handle very long transcripts (virtualized scrolling if needed)
+- [x] Handle network interruptions during video fetch
+- [x] Test with various YouTube video types (short, long, live recordings, music)
+- [x] Fix any playback sync drift issues
 
 ### Documentation
 - [ ] Write `README.md` with project overview, setup instructions, and usage guide
