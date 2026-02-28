@@ -8,75 +8,104 @@
 import type { Video, LibraryVideo, ProgressEntry, ProgressResponse } from '../types';
 
 const API_BASE = '/api';
+const DEFAULT_TIMEOUT_MS = 30_000;
+
+/**
+ * Safely parse JSON from a Response. Returns parsed data or an empty object
+ * if the body is not valid JSON (e.g. HTML error pages).
+ */
+async function safeJsonParse(res: Response): Promise<Record<string, unknown>> {
+  try {
+    return await res.json();
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Wrap fetch with an AbortController-based timeout.
+ * Rejects with "Request timed out" if the request exceeds `timeoutMs`.
+ */
+export async function fetchWithTimeout(
+  input: string,
+  init?: RequestInit,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const existingSignal = init?.signal;
+
+  // If caller passed a signal that's already aborted, respect it
+  if (existingSignal?.aborted) {
+    throw new DOMException('The operation was aborted.', 'AbortError');
+  }
+
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  // Forward external abort to our controller
+  existingSignal?.addEventListener('abort', () => controller.abort());
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('Request timed out');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Handle a non-OK response: parse the JSON body safely, throw an Error
+ * with the server message and attach `error_code` if present.
+ */
+async function handleErrorResponse(res: Response): Promise<never> {
+  const data = await safeJsonParse(res);
+  const message = (typeof data.error === 'string' ? data.error : null)
+    || `Server error (status ${res.status})`;
+  const err = new Error(message);
+  if (typeof data.error_code === 'string') {
+    (err as any).code = data.error_code;
+  }
+  throw err;
+}
 
 /**
  * Submit a YouTube URL and receive video metadata + transcript.
- *
- * @param url - A full YouTube URL (standard or short form).
- * @returns The video object including title, duration, thumbnail, and transcript.
- * @throws {Error} If the backend returns a non-OK status (includes the server error message).
  */
 export async function fetchVideo(url: string): Promise<Video> {
-  const res = await fetch(`${API_BASE}/video`, {
+  const res = await fetchWithTimeout(`${API_BASE}/video`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
   });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to fetch video');
-  }
-
+  if (!res.ok) await handleErrorResponse(res);
   return res.json();
 }
 
 /**
  * Retrieve the cached transcript for a previously fetched video.
- *
- * @param videoId - The 11-character YouTube video ID.
- * @returns An array of transcript segments.
- * @throws {Error} If the video hasn't been fetched yet (404) or another server error occurs.
  */
 export async function fetchTranscript(videoId: string): Promise<Video['transcript']> {
-  const res = await fetch(`${API_BASE}/video/${videoId}/transcript`);
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to fetch transcript');
-  }
-
+  const res = await fetchWithTimeout(`${API_BASE}/video/${videoId}/transcript`);
+  if (!res.ok) await handleErrorResponse(res);
   const data = await res.json();
   return data.transcript;
 }
 
 /**
  * Fetch progress history for a video.
- *
- * @param videoId - The 11-character YouTube video ID.
- * @returns Progress data including current round, step, and all entries.
- * @throws {Error} If the video hasn't been fetched yet (404) or another server error occurs.
  */
 export async function fetchProgress(videoId: string): Promise<ProgressResponse> {
-  const res = await fetch(`${API_BASE}/progress/${videoId}`);
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to fetch progress');
-  }
-
+  const res = await fetchWithTimeout(`${API_BASE}/progress/${videoId}`);
+  if (!res.ok) await handleErrorResponse(res);
   return res.json();
 }
 
 /**
  * Save a new progress entry for a video.
- *
- * @param videoId - The 11-character YouTube video ID.
- * @param round - The round number (>= 1).
- * @param step - The current step (1-5).
- * @param notes - Optional notes for this round.
- * @returns The created progress entry.
- * @throws {Error} If validation fails (400) or the video doesn't exist (404).
  */
 export async function saveProgress(
   videoId: string,
@@ -84,17 +113,12 @@ export async function saveProgress(
   step: number,
   notes?: string,
 ): Promise<ProgressEntry> {
-  const res = await fetch(`${API_BASE}/progress`, {
+  const res = await fetchWithTimeout(`${API_BASE}/progress`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ video_id: videoId, round, step, notes }),
   });
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to save progress');
-  }
-
+  if (!res.ok) await handleErrorResponse(res);
   return res.json();
 }
 
@@ -102,13 +126,8 @@ export async function saveProgress(
  * Fetch the video library — all cached videos without transcript.
  */
 export async function fetchLibrary(): Promise<LibraryVideo[]> {
-  const res = await fetch(`${API_BASE}/videos`);
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to fetch library');
-  }
-
+  const res = await fetchWithTimeout(`${API_BASE}/videos`);
+  if (!res.ok) await handleErrorResponse(res);
   return res.json();
 }
 
@@ -116,13 +135,8 @@ export async function fetchLibrary(): Promise<LibraryVideo[]> {
  * Fetch a single video by ID (full data including transcript).
  */
 export async function fetchVideoById(videoId: string): Promise<Video> {
-  const res = await fetch(`${API_BASE}/video/${videoId}`);
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to fetch video');
-  }
-
+  const res = await fetchWithTimeout(`${API_BASE}/video/${videoId}`);
+  if (!res.ok) await handleErrorResponse(res);
   return res.json();
 }
 
@@ -130,12 +144,8 @@ export async function fetchVideoById(videoId: string): Promise<Video> {
  * Delete a video and all its progress entries.
  */
 export async function deleteVideo(videoId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/video/${videoId}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/video/${videoId}`, {
     method: 'DELETE',
   });
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to delete video');
-  }
+  if (!res.ok) await handleErrorResponse(res);
 }

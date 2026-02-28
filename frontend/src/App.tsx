@@ -7,6 +7,9 @@ import { usePlaybackControls } from './hooks/usePlaybackControls';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
 import { useProgress } from './hooks/useProgress';
 import { useLibrary } from './hooks/useLibrary';
+import { getErrorTitle, getErrorGuidance } from './utils/errorMapping';
+import type { AppError } from './utils/errorMapping';
+import { shouldPauseAfterSegment } from './utils/playback';
 import VideoPlayer from './components/VideoPlayer';
 import PlaybackControls from './components/PlaybackControls';
 import TranscriptPanel from './components/TranscriptPanel';
@@ -18,30 +21,13 @@ import Spinner from './components/Spinner';
 
 type View = 'library' | 'player';
 
-function getErrorTitle(error: string): string {
-  if (/invalid.*url/i.test(error)) return 'Invalid YouTube URL';
-  if (/no transcript|transcriptsdisabled/i.test(error)) return 'Transcript unavailable';
-  if (/network|fetch|econnrefused/i.test(error)) return 'Connection error';
-  return 'Something went wrong';
-}
-
-function getErrorGuidance(error: string): string {
-  if (/invalid.*url/i.test(error))
-    return 'Please enter a valid YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...).';
-  if (/no transcript|transcriptsdisabled/i.test(error))
-    return 'This video does not have captions available. Try a different video with subtitles enabled.';
-  if (/network|fetch|econnrefused/i.test(error))
-    return 'Please check your internet connection and make sure the backend server is running.';
-  return error;
-}
-
 function App() {
   const [view, setView] = useState<View>('library');
   const [url, setUrl] = useState('');
   const [video, setVideo] = useState<Video | null>(null);
   const [player, setPlayer] = useState<YouTubePlayer | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<AppError | null>(null);
 
   // 100LS step state (default: step 3 — matches existing transcript view)
   const [currentStep, setCurrentStep] = useState<ShadowingStep>(3);
@@ -97,7 +83,7 @@ function App() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
@@ -105,15 +91,18 @@ function App() {
       setVideo(data);
       resetPlayerState();
       setView('player');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } catch (err: any) {
+      setError({
+        message: err instanceof Error ? err.message : 'Something went wrong',
+        code: err?.code,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelectVideo = useCallback(async (videoId: string) => {
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
@@ -124,8 +113,11 @@ function App() {
       setPauseAfterSegment(false);
       setPausedBanner(false);
       setView('player');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } catch (err: any) {
+      setError({
+        message: err instanceof Error ? err.message : 'Something went wrong',
+        code: err?.code,
+      });
     } finally {
       setLoading(false);
     }
@@ -194,14 +186,13 @@ function App() {
     }
   }, [activeSegmentIndex, loopEnabled, loopRange, transcript, seekTo]);
 
-  // Pause-after-segment: when segment advances naturally by 1, pause
+  // Pause-after-segment: when segment advances forward, pause
   // Loop takes priority — don't pause if loop is enabled
   useEffect(() => {
     const prev = prevSegmentRef.current;
     prevSegmentRef.current = activeSegmentIndex;
 
-    if (!pauseAfterSegment || loopEnabled || !isPlaying) return;
-    if (activeSegmentIndex >= 0 && activeSegmentIndex === prev + 1) {
+    if (shouldPauseAfterSegment(activeSegmentIndex, prev, pauseAfterSegment, loopEnabled, isPlaying)) {
       pause();
       setPausedBanner(true);
     }
@@ -302,7 +293,7 @@ function App() {
                 <p className="text-red-600 text-sm mt-1">{getErrorGuidance(error)}</p>
               </div>
               <button
-                onClick={() => setError('')}
+                onClick={() => setError(null)}
                 className="text-red-400 hover:text-red-600"
                 aria-label="Dismiss error"
               >
