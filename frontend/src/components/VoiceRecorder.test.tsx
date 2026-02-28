@@ -57,8 +57,8 @@ describe('VoiceRecorder', () => {
     };
     render(<VoiceRecorder {...defaultProps} status="stopped" recording={recording} />);
 
-    expect(screen.getByRole('button', { name: /play mine/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /play my recording/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /clear recording/i })).toBeInTheDocument();
     expect(screen.getByText(/3\.5s/)).toBeInTheDocument();
   });
 
@@ -71,7 +71,7 @@ describe('VoiceRecorder', () => {
     };
     render(<VoiceRecorder {...defaultProps} status="stopped" recording={recording} />);
 
-    expect(screen.getByRole('button', { name: /play original/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /play original segment/i })).toBeInTheDocument();
   });
 
   it('calls onPlayOriginal when Play Original clicked', async () => {
@@ -92,7 +92,7 @@ describe('VoiceRecorder', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /play original/i }));
+    await user.click(screen.getByRole('button', { name: /play original segment/i }));
     expect(onPlayOriginal).toHaveBeenCalled();
   });
 
@@ -114,7 +114,7 @@ describe('VoiceRecorder', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /clear/i }));
+    await user.click(screen.getByRole('button', { name: /clear recording/i }));
     expect(onClearRecording).toHaveBeenCalled();
   });
 

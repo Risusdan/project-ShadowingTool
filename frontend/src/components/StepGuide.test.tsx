@@ -19,7 +19,7 @@ describe('StepGuide', () => {
 
   it('does not highlight non-current steps', () => {
     render(<StepGuide currentStep={3} onStepChange={vi.fn()} />);
-    const btn = screen.getByRole('button', { name: /^1$/ });
+    const btn = screen.getByRole('button', { name: /step 1/i });
     expect(btn.className).not.toMatch(/bg-blue-600/);
   });
 
@@ -33,7 +33,7 @@ describe('StepGuide', () => {
     const onStepChange = vi.fn();
     render(<StepGuide currentStep={1} onStepChange={onStepChange} />);
 
-    await user.click(screen.getByRole('button', { name: /^4$/ }));
+    await user.click(screen.getByRole('button', { name: /step 4/i }));
     expect(onStepChange).toHaveBeenCalledWith(4);
   });
 

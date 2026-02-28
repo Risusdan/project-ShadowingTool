@@ -139,11 +139,11 @@ The **100LS method** (100 Repetitions of Listening and Speaking) guides learners
 - [x] Add a way to remove videos from the library
 
 ### UI Polish
-- [ ] Add loading spinners / skeleton states while fetching video data
-- [ ] Add error messages for invalid URLs, network failures, and missing transcripts
-- [ ] Make the layout responsive (usable on mobile screens)
-- [ ] Ensure keyboard accessibility for core actions (play/pause, record, next segment)
-- [ ] Visual polish: consistent spacing, typography, color scheme
+- [x] Add loading spinners / skeleton states while fetching video data
+- [x] Add error messages for invalid URLs, network failures, and missing transcripts
+- [x] Make the layout responsive (usable on mobile screens)
+- [x] Ensure keyboard accessibility for core actions (play/pause, record, next segment)
+- [x] Visual polish: consistent spacing, typography, color scheme
 
 ### Bug Fixes & Edge Cases
 - [ ] Handle videos with no available captions gracefully

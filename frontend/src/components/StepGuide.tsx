@@ -16,7 +16,9 @@ export default function StepGuide({ currentStep, onStepChange }: StepGuideProps)
           <button
             key={step}
             onClick={() => onStepChange(step)}
-            className={`w-10 h-10 rounded-lg font-semibold text-sm transition-colors ${
+            aria-label={`Step ${step}: ${STEP_LABELS[step]}`}
+            aria-current={step === currentStep ? 'step' : undefined}
+            className={`flex-1 sm:flex-none sm:w-10 h-10 rounded-lg font-semibold text-sm transition-colors ${
               step === currentStep
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'

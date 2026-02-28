@@ -14,8 +14,26 @@ import StepGuide from './components/StepGuide';
 import ProgressTracker from './components/ProgressTracker';
 import VoiceRecorder from './components/VoiceRecorder';
 import VideoLibrary from './components/VideoLibrary';
+import Spinner from './components/Spinner';
 
 type View = 'library' | 'player';
+
+function getErrorTitle(error: string): string {
+  if (/invalid.*url/i.test(error)) return 'Invalid YouTube URL';
+  if (/no transcript|transcriptsdisabled/i.test(error)) return 'Transcript unavailable';
+  if (/network|fetch|econnrefused/i.test(error)) return 'Connection error';
+  return 'Something went wrong';
+}
+
+function getErrorGuidance(error: string): string {
+  if (/invalid.*url/i.test(error))
+    return 'Please enter a valid YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...).';
+  if (/no transcript|transcriptsdisabled/i.test(error))
+    return 'This video does not have captions available. Try a different video with subtitles enabled.';
+  if (/network|fetch|econnrefused/i.test(error))
+    return 'Please check your internet connection and make sure the backend server is running.';
+  return error;
+}
 
 function App() {
   const [view, setView] = useState<View>('library');
@@ -196,32 +214,67 @@ function App() {
     }
   }, [isPlaying]);
 
-  // Keyboard shortcut: Space to play/pause (when no input focused)
+  // Keyboard shortcuts: Space play/pause, Arrow keys prev/next, R record
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return;
       const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
-      e.preventDefault();
-      if (isPlaying) {
-        pause();
-      } else {
-        play();
-        setPausedBanner(false);
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      switch (e.code) {
+        case 'Space':
+          if (tag === 'BUTTON') return;
+          e.preventDefault();
+          if (isPlaying) {
+            pause();
+          } else {
+            play();
+            setPausedBanner(false);
+          }
+          break;
+        case 'ArrowRight': {
+          e.preventDefault();
+          const nextIndex = activeSegmentIndex + 1;
+          if (nextIndex < transcript.length) {
+            seekTo(transcript[nextIndex].start);
+            play();
+            setPausedBanner(false);
+          }
+          break;
+        }
+        case 'ArrowLeft': {
+          e.preventDefault();
+          const prevIndex = activeSegmentIndex - 1;
+          if (prevIndex >= 0) {
+            seekTo(transcript[prevIndex].start);
+            play();
+            setPausedBanner(false);
+          }
+          break;
+        }
+        case 'KeyR':
+          if (tag === 'BUTTON') return;
+          if (!enableRecording) return;
+          e.preventDefault();
+          if (recorder.status === 'recording') {
+            recorder.stopRecording();
+          } else {
+            recorder.startRecording();
+          }
+          break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, play, pause]);
+  }, [isPlaying, play, pause, activeSegmentIndex, transcript, seekTo, enableRecording, recorder]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
           100LS Shadowing Tool
         </h1>
 
-        <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-6">
           <input
             type="text"
             value={url}
@@ -232,14 +285,33 @@ function App() {
           <button
             type="submit"
             disabled={loading || !url.trim()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Loading...' : 'Load'}
+            {loading ? <Spinner size="sm" label="Loading..." /> : 'Load'}
           </button>
         </form>
 
         {error && (
-          <p className="text-red-600 text-sm mb-4">{error}</p>
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-red-700 text-sm font-medium">{getErrorTitle(error)}</p>
+                <p className="text-red-600 text-sm mt-1">{getErrorGuidance(error)}</p>
+              </div>
+              <button
+                onClick={() => setError('')}
+                className="text-red-400 hover:text-red-600"
+                aria-label="Dismiss error"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
         )}
 
         {view === 'library' && (
@@ -249,6 +321,7 @@ function App() {
             error={library.error}
             onSelectVideo={handleSelectVideo}
             onRemoveVideo={handleRemoveVideo}
+            onRetry={library.refresh}
           />
         )}
 
@@ -256,9 +329,12 @@ function App() {
           <div className="space-y-4">
             <button
               onClick={handleBackToLibrary}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
             >
-              &larr; Back to Library
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Library
             </button>
 
             <StepGuide currentStep={currentStep} onStepChange={handleStepChange} />
@@ -276,6 +352,10 @@ function App() {
               videoId={video.video_id}
               onReady={setPlayer}
             />
+
+            <p className="text-xs text-gray-400">
+              Shortcuts: Space play/pause &middot; &larr;&rarr; prev/next &middot; R record
+            </p>
 
             {showControls && (
               <PlaybackControls

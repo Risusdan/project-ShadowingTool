@@ -43,6 +43,7 @@ export default function VoiceRecorder({
           <>
             <button
               onClick={onStopRecording}
+              aria-label="Stop recording"
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
             >
               Stop
@@ -56,6 +57,7 @@ export default function VoiceRecorder({
           <button
             onClick={onStartRecording}
             disabled={disabled}
+            aria-label="Start recording"
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <span className="w-2.5 h-2.5 bg-white rounded-full" />
@@ -84,12 +86,14 @@ export default function VoiceRecorder({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={onPlayOriginal}
+            aria-label="Play original segment"
             className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm font-medium"
           >
             Play Original
           </button>
           <button
             onClick={handlePlayMine}
+            aria-label="Play my recording"
             className="px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm font-medium"
           >
             Play Mine
@@ -97,6 +101,7 @@ export default function VoiceRecorder({
           <span className="text-sm text-gray-500">{recording.duration.toFixed(1)}s</span>
           <button
             onClick={onClearRecording}
+            aria-label="Clear recording"
             className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 text-sm"
           >
             Clear

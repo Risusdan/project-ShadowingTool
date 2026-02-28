@@ -28,6 +28,7 @@ const defaults = {
   error: '',
   onSelectVideo: vi.fn(),
   onRemoveVideo: vi.fn(),
+  onRetry: vi.fn(),
 };
 
 beforeEach(() => {
@@ -87,14 +88,24 @@ describe('VideoLibrary', () => {
     expect(defaults.onSelectVideo).not.toHaveBeenCalled();
   });
 
-  it('shows loading state', () => {
+  it('shows loading state with spinner', () => {
     render(<VideoLibrary {...defaults} loading={true} videos={[]} />);
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByText(/loading library/i)).toBeInTheDocument();
   });
 
   it('shows error state', () => {
     render(<VideoLibrary {...defaults} error="Network error" />);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/network error/i)).toBeInTheDocument();
+  });
+
+  it('calls onRetry when Try again is clicked', async () => {
+    const user = userEvent.setup();
+    render(<VideoLibrary {...defaults} error="Network error" />);
+
+    await user.click(screen.getByRole('button', { name: /try again/i }));
+    expect(defaults.onRetry).toHaveBeenCalled();
   });
 
   it('shows empty state', () => {

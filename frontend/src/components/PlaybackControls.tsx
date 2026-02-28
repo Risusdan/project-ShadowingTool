@@ -38,11 +38,12 @@ export default function PlaybackControls({
         ))}
       </div>
 
-      <div className="h-4 w-px bg-gray-300" />
+      <div className="hidden sm:block h-4 w-px bg-gray-300" />
 
       {/* Loop toggle */}
       <button
         onClick={onLoopToggle}
+        aria-pressed={loopEnabled}
         className={`px-3 py-1 text-xs rounded ${
           loopEnabled
             ? 'bg-green-600 text-white'
@@ -55,6 +56,7 @@ export default function PlaybackControls({
       {/* Pause after segment toggle */}
       <button
         onClick={onPauseAfterSegmentToggle}
+        aria-pressed={pauseAfterSegment}
         className={`px-3 py-1 text-xs rounded ${
           pauseAfterSegment
             ? 'bg-amber-600 text-white'

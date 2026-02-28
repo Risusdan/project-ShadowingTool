@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Spinner from './Spinner';
 
 interface ProgressTrackerProps {
   currentRound: number;
@@ -48,16 +49,16 @@ export default function ProgressTracker({
       </div>
 
       {error && (
-        <p className="text-red-600 text-sm">{error}</p>
+        <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert">{error}</p>
       )}
 
       <div className="flex items-center gap-2">
         <button
           onClick={handleComplete}
           disabled={loading}
-          className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : 'Complete Round'}
+          {loading ? <Spinner size="sm" label="Saving..." /> : 'Complete Round'}
         </button>
 
         {!showNotes && (
